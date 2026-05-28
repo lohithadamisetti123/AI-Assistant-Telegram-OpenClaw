@@ -1,4 +1,4 @@
-# 🦞 Personalized AI Learning Assistant on Telegram with OpenClaw
+# Personalized AI Learning Assistant on Telegram with OpenClaw
 
 A self-hosted, personalized Telegram bot powered by [OpenClaw](https://openclaw.ai) that acts as your daily AI study partner. It onboards users to understand their technical interests, searches the web daily for tailored content, and delivers a curated set of interview questions and technical insights every evening at 9 PM.
 
@@ -506,7 +506,3 @@ AI-Assistant-Telegram-OpenClaw/
 ## License
 
 This project is built for educational purposes as part of the Partnr platform assignment. It uses [OpenClaw](https://openclaw.ai) (open-source) and [Ollama](https://ollama.ai) for local LLM inference.
-
----
-
-**Built with ❤️ by Shamya Lohitha Damisetti**
