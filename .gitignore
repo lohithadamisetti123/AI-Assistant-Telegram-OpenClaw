@@ -1,0 +1,34 @@
+# ── Environment & Secrets ────────────────────
+.env
+.env.local
+.env.production
+
+# ── OpenClaw Data ────────────────────────────
+data/
+*.db
+*.sqlite
+
+# ── Node.js ──────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── OS Files ─────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── IDE / Editor ─────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Docker ───────────────────────────────────
+docker-compose.override.yml
+
+# ── Logs ─────────────────────────────────────
+logs/
+*.log

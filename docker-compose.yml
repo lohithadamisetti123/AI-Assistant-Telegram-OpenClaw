@@ -1,0 +1,131 @@
+# ============================================================
+# Docker Compose — OpenClaw AI Learning Assistant
+# ============================================================
+# Orchestrates the OpenClaw gateway, Ollama LLM server, and
+# an optional SearXNG self-hosted search instance.
+#
+# Usage:
+#   1. Copy .env.example to .env and fill in your values
+#   2. docker compose up -d
+#   3. docker compose logs -f openclaw-gateway
+# ============================================================
+
+version: "3.8"
+
+services:
+  # ── OpenClaw Gateway ──────────────────────────────────────
+  # The core AI agent that runs skills, manages memory, and
+  # connects to Telegram.
+  openclaw-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openclaw-gateway
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT:-18789}:18789"
+    volumes:
+      # Persist memory and agent state across restarts
+      - openclaw-data:/home/openclaw/.openclaw/data
+      - openclaw-workspace:/home/openclaw/workspace
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
+      - LLM_MODEL=${LLM_MODEL:-llama3:8b}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - WEB_SEARCH_PROVIDER=${WEB_SEARCH_PROVIDER:-duckduckgo}
+      - SEARXNG_BASE_URL=${SEARXNG_BASE_URL:-http://searxng:8080}
+      - DEFAULT_TIMEZONE=${DEFAULT_TIMEZONE:-UTC}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - NODE_ENV=production
+    depends_on:
+      ollama:
+        condition: service_started
+    networks:
+      - openclaw-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18789/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+
+  # ── Ollama LLM Server ────────────────────────────────────
+  # Local LLM inference server. Runs models like llama3:8b
+  # entirely on your machine for free, private AI.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      # Persist downloaded models across restarts
+      - ollama-models:/root/.ollama
+    networks:
+      - openclaw-net
+    # Uncomment the following for GPU support (NVIDIA):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ── OpenClaw CLI ──────────────────────────────────────────
+  # Transient container for running management commands like
+  # onboarding, cron management, and memory inspection.
+  # Usage: docker compose run --rm openclaw-cli <command>
+  openclaw-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openclaw-cli
+    profiles:
+      - cli
+    volumes:
+      - openclaw-data:/home/openclaw/.openclaw/data
+      - openclaw-workspace:/home/openclaw/workspace
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
+      - LLM_MODEL=${LLM_MODEL:-llama3:8b}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+    entrypoint: ["openclaw"]
+    networks:
+      - openclaw-net
+
+  # ── SearXNG (Optional) ───────────────────────────────────
+  # Self-hosted meta-search engine for enhanced web search.
+  # Enable by setting WEB_SEARCH_PROVIDER=searxng in .env
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    restart: unless-stopped
+    profiles:
+      - search
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - searxng-data:/etc/searxng
+    environment:
+      - SEARXNG_BASE_URL=http://searxng:8080/
+    networks:
+      - openclaw-net
+
+# ── Volumes ─────────────────────────────────────────────────
+volumes:
+  openclaw-data:
+    driver: local
+  openclaw-workspace:
+    driver: local
+  ollama-models:
+    driver: local
+  searxng-data:
+    driver: local
+
+# ── Networks ────────────────────────────────────────────────
+networks:
+  openclaw-net:
+    driver: bridge

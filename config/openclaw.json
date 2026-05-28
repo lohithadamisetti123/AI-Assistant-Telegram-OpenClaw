@@ -1,0 +1,106 @@
+{
+  // OpenClaw Configuration
+  // See: https://docs.openclaw.ai/configuration
+  //
+  // IMPORTANT: Never commit real secrets or API keys to version control.
+  // Use environment variables referenced via ${env.VARIABLE_NAME} syntax.
+  // Copy .env.example to .env and fill in your actual values.
+
+  // ─────────────────────────────────────────────
+  // LLM Provider Configuration
+  // ─────────────────────────────────────────────
+  "llm": {
+    "provider": "ollama",
+    "model": "llama3:8b",
+    "baseUrl": "http://ollama:11434",
+    "options": {
+      "temperature": 0.7,
+      "maxTokens": 4096,
+      "topP": 0.9
+    }
+  },
+
+  // ─────────────────────────────────────────────
+  // Web Search Configuration
+  // ─────────────────────────────────────────────
+  "webSearch": {
+    "provider": "duckduckgo",
+    "enabled": true,
+    "maxResults": 10,
+    "safeSearch": true
+  },
+
+  // ─────────────────────────────────────────────
+  // Plugin Configuration
+  // ─────────────────────────────────────────────
+  "plugins": {
+    "entries": {
+      "telegram": {
+        "enabled": true,
+        "package": "@openclaw/plugin-telegram",
+        "config": {
+          "botToken": "${env.TELEGRAM_BOT_TOKEN}"
+        }
+      }
+    }
+  },
+
+  // ─────────────────────────────────────────────
+  // Skills Configuration
+  // ─────────────────────────────────────────────
+  "skills": {
+    "directory": "./skills",
+    "enabled": [
+      "user-onboarding",
+      "daily-quiz"
+    ]
+  },
+
+  // ─────────────────────────────────────────────
+  // Memory Configuration
+  // ─────────────────────────────────────────────
+  "memory": {
+    "provider": "local",
+    "persistPath": "./data/memory"
+  },
+
+  // ─────────────────────────────────────────────
+  // Standing Orders
+  // ─────────────────────────────────────────────
+  "standingOrders": [
+    {
+      "name": "trigger-user-onboarding",
+      "condition": "memory.user_profile_{{user.id}} does not exist",
+      "action": "run-skill",
+      "skill": "user-onboarding",
+      "description": "Automatically trigger onboarding for any new user who messages the bot for the first time and has no existing profile in memory."
+    }
+  ],
+
+  // ─────────────────────────────────────────────
+  // Cron Jobs (Scheduled Tasks)
+  // ─────────────────────────────────────────────
+  "cron": {
+    "jobs": [
+      {
+        "name": "nightly-tech-brief",
+        "schedule": "0 21 * * *",
+        "timezone": "UTC",
+        "session": "isolated",
+        "message": "Run the daily-quiz skill for all onboarded users. For each user with a stored profile, use their preferences to generate and send a personalized daily tech brief via Telegram.",
+        "announce": true,
+        "channel": "telegram",
+        "skill": "daily-quiz"
+      }
+    ]
+  },
+
+  // ─────────────────────────────────────────────
+  // Gateway Configuration
+  // ─────────────────────────────────────────────
+  "gateway": {
+    "port": 18789,
+    "host": "0.0.0.0",
+    "logLevel": "info"
+  }
+}
